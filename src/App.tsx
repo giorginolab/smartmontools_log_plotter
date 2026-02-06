@@ -1,15 +1,8 @@
 import React, { useMemo, useRef, useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Card, CardContent } from "./components/ui/card";
+import { Button } from "./components/ui/button";
+import { Input } from "./components/ui/input";
+import { Label } from "./components/ui/label";
 import {
   LineChart,
   Line,
@@ -311,39 +304,35 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen p-4 md:p-6">
-      <div className="mx-auto max-w-6xl space-y-4">
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+    <div className="page">
+      <div className="container">
+        <div className="top-bar">
           <div>
-            <div className="text-xl font-semibold">SMART Log Plotter</div>
-            <div className="text-sm text-muted-foreground">
+            <div className="title">SMART Log Plotter</div>
+            <div className="subtitle">
               Upload a log file; choose attributes; plot raw or normalized values over time.
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="controls">
             <Input
               ref={fileRef as any}
               type="file"
-              className="w-[280px]"
+              className="file-input"
               accept=".txt,.log,.csv,.tsv,*/*"
               onChange={onFileChange}
             />
 
-            <div className="flex items-center gap-2">
-              <Label className="whitespace-nowrap">Value</Label>
-              <Select
+            <div className="value-mode">
+              <Label className="label">Value</Label>
+              <select
+                className="select"
                 value={valueMode}
-                onValueChange={(v) => setValueMode(v as any)}
+                onChange={(e) => setValueMode(e.target.value as "raw" | "norm")}
               >
-                <SelectTrigger className="w-[160px]">
-                  <SelectValue placeholder="raw" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="raw">raw</SelectItem>
-                  <SelectItem value="norm">normalized</SelectItem>
-                </SelectContent>
-              </Select>
+                <option value="raw">raw</option>
+                <option value="norm">normalized</option>
+              </select>
             </div>
 
             <Button
@@ -363,32 +352,30 @@ export default function App() {
           </div>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-[340px_1fr]">
-          <Card className="rounded-2xl">
-            <CardContent className="p-4 space-y-3">
-              <div className="flex items-center justify-between gap-2">
+        <div className="main-grid">
+          <Card className="panel">
+            <CardContent className="panel-content">
+              <div className="panel-header">
                 <div>
-                  <div className="text-sm font-medium">Attributes</div>
-                  <div className="text-xs text-muted-foreground">
+                  <div className="panel-title">Attributes</div>
+                  <div className="panel-subtitle">
                     Multi-select to plot multiple series.
                   </div>
                 </div>
-                <div className="text-xs font-mono text-muted-foreground">
-                  {status}
-                </div>
+                <div className="status">{status}</div>
               </div>
 
-              <div className="space-y-2">
-                <Label className="text-xs">Selected ({selectedAttrs.length})</Label>
-                <div className="rounded-xl border p-2 max-h-[340px] overflow-auto">
+              <div className="panel-body">
+                <Label className="label">Selected ({selectedAttrs.length})</Label>
+                <div className="attr-list">
                   {parsed ? (
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="attr-grid">
                       {parsed.attrs.map((id, idx) => {
                         const checked = selectedAttrs.includes(id);
                         return (
                           <label
                             key={id}
-                            className="flex items-center gap-2 text-sm cursor-pointer select-none"
+                            className="attr-item"
                           >
                             <input
                               type="checkbox"
@@ -401,9 +388,9 @@ export default function App() {
                                 });
                               }}
                             />
-                            <span className="font-mono">{attrLabel(id)}</span>
+                            <span className="mono">{attrLabel(id)}</span>
                             <span
-                              className="ml-auto h-2 w-2 rounded-full"
+                              className="dot"
                               style={{ background: pickPalette(idx) }}
                             />
                           </label>
@@ -411,27 +398,25 @@ export default function App() {
                       })}
                     </div>
                   ) : (
-                    <div className="text-sm text-muted-foreground">
-                      Upload a file to see attributes.
-                    </div>
+                    <div className="muted">Upload a file to see attributes.</div>
                   )}
                 </div>
 
-                <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs text-muted-foreground pt-2">
+                <div className="summary">
                   <div>Rows</div>
-                  <div className="text-right font-mono">{summary?.rows ?? "—"}</div>
+                  <div className="mono right">{summary?.rows ?? "—"}</div>
                   <div>Attrs found</div>
-                  <div className="text-right font-mono">{summary?.attrs ?? "—"}</div>
-                  <div className="col-span-2">Time range</div>
-                  <div className="col-span-2 font-mono">{summary?.range ?? "—"}</div>
+                  <div className="mono right">{summary?.attrs ?? "—"}</div>
+                  <div className="span-2">Time range</div>
+                  <div className="mono span-2">{summary?.range ?? "—"}</div>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="rounded-2xl">
-            <CardContent className="p-2 md:p-4">
-              <div className="h-[70vh] min-h-[420px]">
+          <Card className="panel">
+            <CardContent className="chart">
+              <div className="chart-box">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={chartData} margin={{ top: 10, right: 20, bottom: 10, left: 10 }}>
                     <CartesianGrid strokeDasharray="3 3" />
@@ -478,20 +463,20 @@ export default function App() {
                 </ResponsiveContainer>
               </div>
 
-              <div className="pt-2 text-xs text-muted-foreground">
+              <div className="muted">
                 X-axis is time; Y-axis is {valueMode === "raw" ? "raw value" : "normalized value"}. Use the legend to toggle series.
               </div>
             </CardContent>
           </Card>
         </div>
 
-        <Card className="rounded-2xl">
-          <CardContent className="p-4 text-sm text-muted-foreground">
-            <div className="font-medium text-foreground mb-1">Expected format</div>
-            <div className="font-mono text-xs leading-relaxed">
+        <Card className="panel">
+          <CardContent className="panel-content">
+            <div className="panel-title">Expected format</div>
+            <div className="mono small">
               YYYY-MM-DD HH:mm:ss; attr; norm; raw; attr; norm; raw; ...
             </div>
-            <div className="mt-2">
+            <div className="muted">
               Notes: the parser splits on semicolons, trims whitespace/tabs, ignores empty trailing separators, and skips non-numeric values.
             </div>
           </CardContent>
