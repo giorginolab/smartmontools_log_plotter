@@ -77,3 +77,17 @@ npm run preview
 - This project is client-side only (no backend).
 - Timestamps are displayed using your local browser time formatting from parsed
   log data.
+
+## Deploy To GitHub Pages (Actions)
+
+This repo includes a workflow at `.github/workflows/deploy-pages.yml` that:
+
+- builds the app on pushes to `main` (or manually via workflow dispatch)
+- publishes `dist/` to GitHub Pages
+- sets the Vite base path automatically for project pages
+
+One-time repository setup:
+
+1. Open repository `Settings` -> `Pages`.
+2. Set `Source` to `GitHub Actions`.
+3. Push to `main` (or run the workflow manually from `Actions`).
