@@ -47,6 +47,8 @@ Parser behavior:
 - Ignores empty trailing separators
 - Skips unusable rows/values (invalid timestamp or non-numeric value)
 
+Logs are usually found in `/var/lib/smartmontools/` on Linux systems.
+
 ## Example Data
 
 Sample files are included in `examples/` and can be used to test the UI quickly.

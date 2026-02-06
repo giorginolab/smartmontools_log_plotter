@@ -527,7 +527,7 @@ export default function App() {
               YYYY-MM-DD HH:mm:ss; attr; norm; raw; attr; norm; raw; ...
             </div>
             <div className="muted">
-              Notes: the parser splits on semicolons, trims whitespace/tabs, ignores empty trailing separators, and skips non-numeric values.
+              Notes: the parser splits on semicolons, trims whitespace/tabs, ignores empty trailing separators, and skips non-numeric values. Logs are usually found in `/var/lib/smartmontools/`.
             </div>
           </CardContent>
         </Card>
