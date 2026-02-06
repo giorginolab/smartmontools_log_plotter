@@ -233,7 +233,6 @@ export default function App() {
   const fileRef = useRef<HTMLInputElement | null>(null);
 
   const [parsed, setParsed] = useState<Parsed | null>(null);
-  const [valueMode, setValueMode] = useState<"raw" | "norm">("raw");
   const [selectedAttrs, setSelectedAttrs] = useState<string[]>([]);
   const [status, setStatus] = useState<string>("Upload a log file to plot");
 
@@ -251,7 +250,7 @@ export default function App() {
   }, [parsed]);
 
   // Build a single “wide” dataset for recharts:
-  // [{ t, "194": value, "1": value, ... }, ...]
+  // [{ t, "194_raw": value, "194_norm": value, ... }, ...]
   // Note: points may be missing for some attrs; we keep them undefined.
   const chartData = useMemo(() => {
     if (!parsed) return [] as any[];
@@ -260,16 +259,24 @@ export default function App() {
     const map = new Map<number, any>();
 
     for (const attrId of selectedAttrs) {
-      const series = parsed.byAttr[attrId]?.[valueMode] ?? [];
-      for (const p of series) {
+      const rawSeries = parsed.byAttr[attrId]?.raw ?? [];
+      const normSeries = parsed.byAttr[attrId]?.norm ?? [];
+
+      for (const p of rawSeries) {
         const row = map.get(p.t) ?? { t: p.t };
-        row[attrId] = p.v;
+        row[`${attrId}_raw`] = p.v;
+        map.set(p.t, row);
+      }
+
+      for (const p of normSeries) {
+        const row = map.get(p.t) ?? { t: p.t };
+        row[`${attrId}_norm`] = p.v;
         map.set(p.t, row);
       }
     }
 
     return Array.from(map.values()).sort((a, b) => a.t - b.t);
-  }, [parsed, selectedAttrs, valueMode]);
+  }, [parsed, selectedAttrs]);
 
   async function onFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
@@ -310,7 +317,7 @@ export default function App() {
           <div>
             <div className="title">SMART Log Plotter</div>
             <div className="subtitle">
-              Upload a log file; choose attributes; plot raw or normalized values over time.
+              Upload a log file; choose attributes; plot raw and normalized values over time.
             </div>
           </div>
 
@@ -322,18 +329,6 @@ export default function App() {
               accept=".txt,.log,.csv,.tsv,*/*"
               onChange={onFileChange}
             />
-
-            <div className="value-mode">
-              <Label className="label">Value</Label>
-              <select
-                className="select"
-                value={valueMode}
-                onChange={(e) => setValueMode(e.target.value as "raw" | "norm")}
-              >
-                <option value="raw">raw</option>
-                <option value="norm">normalized</option>
-              </select>
-            </div>
 
             <Button
               variant="secondary"
@@ -428,6 +423,8 @@ export default function App() {
                       minTickGap={20}
                     />
                     <YAxis
+                      yAxisId="raw"
+                      orientation="left"
                       tickFormatter={(v) => {
                         const n = Number(v);
                         if (!Number.isFinite(n)) return "";
@@ -440,31 +437,59 @@ export default function App() {
                         return String(n);
                       }}
                     />
+                    <YAxis
+                      yAxisId="norm"
+                      orientation="right"
+                      tickFormatter={(v) => {
+                        const n = Number(v);
+                        if (!Number.isFinite(n)) return "";
+                        const abs = Math.abs(n);
+                        if (abs >= 1e12) return `${(n / 1e12).toFixed(2)}T`;
+                        if (abs >= 1e9) return `${(n / 1e9).toFixed(2)}B`;
+                        if (abs >= 1e6) return `${(n / 1e6).toFixed(2)}M`;
+                        if (abs >= 1e3) return `${(n / 1e3).toFixed(2)}K`;
+                        return String(n);
+                      }}
+                    />
                     <Tooltip
                       labelFormatter={(v) => formatMs(Number(v))}
-                      formatter={(value: any, name: any) => [value, attrLabel(String(name))]}
+                      formatter={(value: any, name: any) => [value, String(name)]}
                     />
                     <Legend />
 
                     {selectedAttrs.map((id, idx) => (
-                      <Line
-                        key={id}
-                        type="monotone"
-                        dataKey={id}
-                        name={attrLabel(id)}
-                        dot={false}
-                        stroke={pickPalette(idx)}
-                        strokeWidth={2}
-                        connectNulls={false}
-                        isAnimationActive={false}
-                      />
+                      <React.Fragment key={id}>
+                        <Line
+                          type="monotone"
+                          yAxisId="raw"
+                          dataKey={`${id}_raw`}
+                          name={`${attrLabel(id)} (raw)`}
+                          dot={false}
+                          stroke={pickPalette(idx)}
+                          strokeWidth={2}
+                          connectNulls={false}
+                          isAnimationActive={false}
+                        />
+                        <Line
+                          type="monotone"
+                          yAxisId="norm"
+                          dataKey={`${id}_norm`}
+                          name={`${attrLabel(id)} (norm)`}
+                          dot={false}
+                          stroke={pickPalette(idx)}
+                          strokeDasharray="6 3"
+                          strokeWidth={2}
+                          connectNulls={false}
+                          isAnimationActive={false}
+                        />
+                      </React.Fragment>
                     ))}
                   </LineChart>
                 </ResponsiveContainer>
               </div>
 
               <div className="muted">
-                X-axis is time; Y-axis is {valueMode === "raw" ? "raw value" : "normalized value"}. Use the legend to toggle series.
+                X-axis is time; left Y-axis is raw value; right Y-axis is normalized value.
               </div>
             </CardContent>
           </Card>
