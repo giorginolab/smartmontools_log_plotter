@@ -212,6 +212,10 @@ function formatMs(ms: number): string {
   )}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
 }
 
+function formatDateMs(ms: number): string {
+  return formatMs(ms).slice(0, 10);
+}
+
 function pickPalette(idx: number): string {
   // A simple, deterministic palette (no user request for specific colors; this is UI-only).
   const colors = [
@@ -441,7 +445,7 @@ export default function App() {
                       dataKey="t"
                       type="number"
                       domain={["dataMin", "dataMax"]}
-                      tickFormatter={(v) => formatMs(Number(v)).slice(11, 19)}
+                      tickFormatter={(v) => formatDateMs(Number(v))}
                       minTickGap={20}
                     />
                     {showRaw && (
@@ -500,7 +504,7 @@ export default function App() {
               </div>
 
               <div className="muted">
-                X-axis is time; mode is {plotModeLabel.toLowerCase()}.
+                X-axis is date; mode is {plotModeLabel.toLowerCase()}.
               </div>
             </CardContent>
           </Card>
