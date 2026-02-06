@@ -233,7 +233,7 @@ export default function App() {
   const fileRef = useRef<HTMLInputElement | null>(null);
 
   const [parsed, setParsed] = useState<Parsed | null>(null);
-  const [selectedAttrs, setSelectedAttrs] = useState<string[]>([]);
+  const [selectedAttr, setSelectedAttr] = useState<string | null>(null);
   const [status, setStatus] = useState<string>("Upload a log file to plot");
 
   const summary = useMemo(() => {
@@ -254,29 +254,26 @@ export default function App() {
   // Note: points may be missing for some attrs; we keep them undefined.
   const chartData = useMemo(() => {
     if (!parsed) return [] as any[];
-    if (selectedAttrs.length === 0) return [] as any[];
+    if (!selectedAttr) return [] as any[];
 
     const map = new Map<number, any>();
+    const rawSeries = parsed.byAttr[selectedAttr]?.raw ?? [];
+    const normSeries = parsed.byAttr[selectedAttr]?.norm ?? [];
 
-    for (const attrId of selectedAttrs) {
-      const rawSeries = parsed.byAttr[attrId]?.raw ?? [];
-      const normSeries = parsed.byAttr[attrId]?.norm ?? [];
+    for (const p of rawSeries) {
+      const row = map.get(p.t) ?? { t: p.t };
+      row[`${selectedAttr}_raw`] = p.v;
+      map.set(p.t, row);
+    }
 
-      for (const p of rawSeries) {
-        const row = map.get(p.t) ?? { t: p.t };
-        row[`${attrId}_raw`] = p.v;
-        map.set(p.t, row);
-      }
-
-      for (const p of normSeries) {
-        const row = map.get(p.t) ?? { t: p.t };
-        row[`${attrId}_norm`] = p.v;
-        map.set(p.t, row);
-      }
+    for (const p of normSeries) {
+      const row = map.get(p.t) ?? { t: p.t };
+      row[`${selectedAttr}_norm`] = p.v;
+      map.set(p.t, row);
     }
 
     return Array.from(map.values()).sort((a, b) => a.t - b.t);
-  }, [parsed, selectedAttrs]);
+  }, [parsed, selectedAttr]);
 
   async function onFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
@@ -291,24 +288,25 @@ export default function App() {
     setParsed(p);
 
     if (p.rows === 0 || p.attrs.length === 0) {
-      setSelectedAttrs([]);
+      setSelectedAttr(null);
       setStatus("No usable data found in file");
       return;
     }
 
     setStatus("Ready");
-    // default select first 5 attrs
-    setSelectedAttrs(p.attrs.slice(0, 5));
-  }
-
-  function selectAll() {
-    if (!parsed) return;
-    setSelectedAttrs(parsed.attrs);
+    // default select first attr
+    setSelectedAttr(p.attrs[0] ?? null);
   }
 
   function clearSelection() {
-    setSelectedAttrs([]);
+    setSelectedAttr(null);
   }
+
+  const selectedAttrColor = useMemo(() => {
+    if (!parsed || !selectedAttr) return pickPalette(0);
+    const idx = parsed.attrs.indexOf(selectedAttr);
+    return pickPalette(idx >= 0 ? idx : 0);
+  }, [parsed, selectedAttr]);
 
   return (
     <div className="page">
@@ -332,14 +330,7 @@ export default function App() {
 
             <Button
               variant="secondary"
-              disabled={!parsed || parsed.attrs.length === 0}
-              onClick={selectAll}
-            >
-              Select all
-            </Button>
-            <Button
-              variant="secondary"
-              disabled={!parsed || selectedAttrs.length === 0}
+              disabled={!parsed || !selectedAttr}
               onClick={clearSelection}
             >
               Clear
@@ -354,34 +345,29 @@ export default function App() {
                 <div>
                   <div className="panel-title">Attributes</div>
                   <div className="panel-subtitle">
-                    Multi-select to plot multiple series.
+                    Select one attribute to plot.
                   </div>
                 </div>
                 <div className="status">{status}</div>
               </div>
 
               <div className="panel-body">
-                <Label className="label">Selected ({selectedAttrs.length})</Label>
+                <Label className="label">Selected ({selectedAttr ? 1 : 0})</Label>
                 <div className="attr-list">
                   {parsed ? (
                     <div className="attr-grid">
                       {parsed.attrs.map((id, idx) => {
-                        const checked = selectedAttrs.includes(id);
+                        const checked = selectedAttr === id;
                         return (
                           <label
                             key={id}
                             className="attr-item"
                           >
                             <input
-                              type="checkbox"
+                              type="radio"
+                              name="selected-attr"
                               checked={checked}
-                              onChange={(ev) => {
-                                const on = ev.target.checked;
-                                setSelectedAttrs((prev) => {
-                                  if (on) return Array.from(new Set([...prev, id]));
-                                  return prev.filter((x) => x !== id);
-                                });
-                              }}
+                              onChange={() => setSelectedAttr(id)}
                             />
                             <span className="mono">{attrLabel(id)}</span>
                             <span
@@ -457,15 +443,15 @@ export default function App() {
                     />
                     <Legend />
 
-                    {selectedAttrs.map((id, idx) => (
-                      <React.Fragment key={id}>
+                    {selectedAttr && (
+                      <React.Fragment key={selectedAttr}>
                         <Line
                           type="monotone"
                           yAxisId="raw"
-                          dataKey={`${id}_raw`}
-                          name={`${attrLabel(id)} (raw)`}
+                          dataKey={`${selectedAttr}_raw`}
+                          name={`${attrLabel(selectedAttr)} (raw)`}
                           dot={false}
-                          stroke={pickPalette(idx)}
+                          stroke={selectedAttrColor}
                           strokeWidth={2}
                           connectNulls={false}
                           isAnimationActive={false}
@@ -473,17 +459,17 @@ export default function App() {
                         <Line
                           type="monotone"
                           yAxisId="norm"
-                          dataKey={`${id}_norm`}
-                          name={`${attrLabel(id)} (norm)`}
+                          dataKey={`${selectedAttr}_norm`}
+                          name={`${attrLabel(selectedAttr)} (norm)`}
                           dot={false}
-                          stroke={pickPalette(idx)}
+                          stroke={selectedAttrColor}
                           strokeDasharray="6 3"
                           strokeWidth={2}
                           connectNulls={false}
                           isAnimationActive={false}
                         />
                       </React.Fragment>
-                    ))}
+                    )}
                   </LineChart>
                 </ResponsiveContainer>
               </div>
