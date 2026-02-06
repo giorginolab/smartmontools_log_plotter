@@ -8,6 +8,12 @@ This is useful when you want to inspect disk health trends (for example,
 temperature, pending sectors, reallocated sectors, or power-on hours) without
 manual spreadsheet work.
 
+## SMART Attribute Reference
+
+For a general description of SMART attributes and terminology, see:
+
+- <https://en.wikipedia.org/wiki/Self-Monitoring,_Analysis_and_Reporting_Technology>
+
 ## What It Does
 
 - Parses log rows in this shape:

@@ -349,6 +349,16 @@ export default function App() {
             <div className="subtitle">
               Upload a log file; choose attributes; plot raw and normalized values over time.
             </div>
+            <div className="subtitle">
+              SMART attribute descriptions:{" "}
+              <a
+                href="https://en.wikipedia.org/wiki/Self-Monitoring,_Analysis_and_Reporting_Technology"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Wikipedia
+              </a>
+            </div>
           </div>
 
           <div className="controls">
